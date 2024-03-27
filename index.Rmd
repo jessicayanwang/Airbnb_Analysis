@@ -8,3 +8,29 @@ output:
 ---
 
 This is my JSC370 Final Project website.
+
+```{r echo=FALSE, message=FALSE}
+source("process_starbucks_data.R")
+```
+
+
+## Showcasing plots {.tabset}
+
+### Figure 1
+
+```{r echo=FALSE}
+p1 = ggplot(sb_locs_state, aes(x=population, y=n_stores, color=state)) + geom_point(alpha=0.8)
+ggplotly(p1)
+```
+
+### Figure 2
+
+```{r echo=FALSE}
+p2 = sb_nutr |> ggplot(aes(x = Calories, fill = Category)) + 
+  geom_histogram(binwidth = 50, alpha = 0.7) + 
+  facet_wrap(~ Category) 
+
+ggplotly(p2)
+```
+
+
