@@ -1,0 +1,99 @@
+---
+title: "Decoding Airbnb: Price Influences in New York City"
+author: "Jessica Wang"
+output: 
+    html_document:
+        toc: TRUE
+        toc_float: TRUE
+---
+
+```{r echo=FALSE, message=FALSE}
+source("Project.R")
+```
+
+
+## Showcasing plots {.tabset}
+
+### Figure 1
+
+```{r echo=FALSE}
+# Listing Price by Boroughs
+p1 = ggplot(df, aes(x = `neighbourhood group`, y = price)) +
+  geom_boxplot() +
+  labs(title = "Airbnb Listing Price by Borough",
+       x = "Boroughs in New York City",
+       y = "Price") +
+  theme(legend.position = "bottom")
+ggplotly(p1)
+```
+
+This boxplot visualizes the distribution of Airbnb listing prices across the different boroughs of New York City. Each box represents the interquartile range of prices within a borough, highlighting the median, and potentially identifying outliers. This visualization helps to compare the typical pricing structures across boroughs and can inform both hosts and guests about expected costs in different areas.
+
+### Figure 2
+
+```{r, message=FALSE, echo=FALSE}
+# Listing Price by Neighborhoods 
+neighbourhoods_price_df <- df %>%
+  group_by(neighbourhood) %>%
+  summarise(MeanPrice=mean(price), MeanLat=mean(lat), MeanLong=mean(long), )  %>%
+  arrange(desc(MeanPrice))
+
+top_places <- neighbourhoods_price_df %>% top_n(10, wt=MeanPrice)
+
+# Plot the map
+pal <- colorNumeric(
+  palette = "viridis",
+  domain = neighbourhoods_price_df$MeanPrice
+  )
+
+leaflet(neighbourhoods_price_df) %>%
+  addTiles() %>%
+  addCircleMarkers(lat = ~MeanLat, lng = ~MeanLong,
+                   color = ~pal(MeanPrice)) %>%
+  addMarkers(data = top_places, lng = ~MeanLong, lat = ~MeanLat, popup = ~as.character(round(MeanPrice, digits=0))) %>%
+  addLegend('bottomright', pal = pal, values = neighbourhoods_price_df$MeanPrice,
+            title = 'Average Price of Airbnb Listings by Neighborhoods',
+            opacity = 1)
+```
+
+### Figure 3
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Facet plot by neighbourhoods (with top 5 number of listings) showing scatterplots with linear regression lines of the total number of reviews and prices
+
+top_5 <- df %>% group_by(neighbourhood) %>%
+  summarise(Count=n())  %>%
+  arrange(desc(Count)) %>%
+  top_n(5, wt=Count)
+
+df_selected_neighbourhoods <- df %>% 
+  filter(neighbourhood %in% top_5$neighbourhood)
+
+# Create the facet plot
+p3 = ggplot(df_selected_neighbourhoods, aes(x = `number of reviews`, y = price)) +
+  geom_point() +  
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~neighbourhood) + 
+  labs(title = "Airbnb Listing Price vs Total Number of Reviews",
+       x = "Total Number of Reviews",
+       y = "Airbnb Listing Price") 
+
+ggplotly(p3)
+```
+
+This facet plot explores the relationship between the number of reviews a listing has and its pricing across the five neighbourhoods with the highest count of listings in New York City. Each panel represents one neighbourhood and displays a scatterplot with a linear regression line, helping to visualize how consumer feedback (in the form of total reviews) might correlate with pricing strategies in different parts of the city. This analysis can reveal if more popular (frequently reviewed) listings tend to charge more or less, depending on the local market dynamics.
+
+### Figure 4
+```{r, message=FALSE, echo=FALSE}
+# Listing Price by Minimum Nights
+p4 <- ggplot(df, aes(x = as.factor(`minimum nights`), y = price)) +
+  geom_boxplot() +
+  labs(title = "Airbnb Listing Price by Minimum Nights Requirement",
+       x = "Minimum Nights Requirement",
+       y = "Price (per night)") +
+  theme(legend.position = "bottom")
+ggplotly(p4)
+```
+
+
+

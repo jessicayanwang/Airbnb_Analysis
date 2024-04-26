@@ -1,57 +1,60 @@
 ---
 title: "Decoding Airbnb: Price Influences in New York City"
 author: "Jessica Wang"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output: 
     html_document:
         toc: TRUE
         toc_float: TRUE
+        css: styles.css
+        theme: cosmo
 ---
 
-This project conducts an exploratory analysis of the Airbnb Open Data from Kaggle to investigate the factors that significantly influence Airbnb listing prices in New York City. By analyzing data spanning from 2008 to 2022, the project aims to uncover patterns and correlations between listing attributes such as location, ratings, and price. 
+# Overview
 
+This project conducts an exploratory analysis of Airbnb listing data from New York City, sourced from the open dataset available on Kaggle. The focus is on understanding the various factors that influence the pricing of Airbnb listings, with an aim to provide insights that could benefit hosts, guests, and policymakers engaged with the sharing economy.
+
+## Project Introduction
+
+Airbnb has transformed the way people travel and experience new locations by providing unique lodging options that range from simple rooms to entire homes. Understanding what drives the pricing of these listings is crucial for stakeholders to make informed decisions. This analysis explores data spanning from 2008 to 2022, examining attributes such as geographical location, customer ratings, and other relevant factors.
+
+## Research Question
+
+The primary question guiding this study is: "What factors significantly influence the price of an Airbnb house listing in New York City?" We hypothesize that variables such as location, ratings, and the type of accommodation play significant roles in shaping pricing strategies.
+
+## Significance of the Study
+
+The findings from this study are intended to:
+
+- Help Airbnb hosts set competitive and fair prices for their accommodations.
+- Assist guests in finding the best possible lodging options within their budget.
+- Offer policymakers data-driven insights into the impact of short-term rentals on local housing markets and tourism.
+
+## Data
 ```{r echo=FALSE, message=FALSE}
 source("Project.R")
 ```
 
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+library(gtsummary)
+library(gt)
 
-## Showcasing plots {.tabset}
+table1 <- 
+  df %>%
+  tbl_summary(include = c(host_identity_verified, `minimum nights`, `neighbourhood group`, instant_bookable), label = c(host_identity_verified ~ "Host Verified", `minimum nights` ~ "Minimum Nights Requirement",  `neighbourhood group` ~ "Boroughs", instant_bookable~"Instant Bookable")) %>%
+  as_gt() %>%
+  gt::as_raw_html()
 
-### Figure 1
 
-```{r echo=FALSE}
-# Listing Price by Boroughs
-p1 = ggplot(df, aes(x = `neighbourhood group`, y = price)) +
-  geom_boxplot() +
-  labs(title = "Airbnb Listing Price by Borough",
-       x = "Boroughs in New York City",
-       y = "Price") +
-  theme(legend.position = "bottom")
-ggplotly(p1)
+table2 <- 
+  df %>%
+  tbl_summary(include = c(`Construction year`, price, `service fee`,`number of reviews`)) %>% 
+  as_gt() %>%
+  gt::as_raw_html()
+
+cat('<div style="display: flex; justify-content: space-between;">')
+cat('<div style="width: 50%;">', table1, '</div>')
+cat('<div style="width: 50%;">', table2, '</div>')
+cat('</div>')
 ```
-
-### Figure 2
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-# Facet plot by neighbourhoods (with top 5 number of listings) showing scatterplots with linear regression lines of the total number of reviews and prices
-
-top_5 <- df %>% group_by(neighbourhood) %>%
-  summarise(Count=n())  %>%
-  arrange(desc(Count)) %>%
-  top_n(5, wt=Count)
-
-df_selected_neighbourhoods <- df %>% 
-  filter(neighbourhood %in% top_5$neighbourhood)
-
-# Create the facet plot
-p2 = ggplot(df_selected_neighbourhoods, aes(x = `number of reviews`, y = price)) +
-  geom_point() +  
-  geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~neighbourhood) + 
-  labs(title = "Airbnb Listing Price vs Total Number of Reviews",
-       x = "Total Number of Reviews",
-       y = "Airbnb Listing Price") 
-
-ggplotly(p2)
-```
-
 

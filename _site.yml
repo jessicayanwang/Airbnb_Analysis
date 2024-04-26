@@ -1,11 +1,12 @@
 name: "my-website"
 output_dir: "."
 navbar:
-  title: "Decoding Airbnb: Price Influences in New York City"
+  title: "Decoding Airbnb"
   left:
     - text: "Home"
       href: index.html
     - text: "Visualizations"
+      href: visualizations.html
   right:
     - icon: fa-github fa-lg
       href: https://github.com/jessicayanwang/Airbnb_Analysis.git
