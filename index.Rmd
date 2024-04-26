@@ -10,7 +10,7 @@ output:
 This is my JSC370 Final Project website.
 
 ```{r echo=FALSE, message=FALSE}
-source("process_starbucks_data.R")
+source("Project.R")
 ```
 
 
@@ -19,16 +19,37 @@ source("process_starbucks_data.R")
 ### Figure 1
 
 ```{r echo=FALSE}
-p1 = ggplot(sb_locs_state, aes(x=population, y=n_stores, color=state)) + geom_point(alpha=0.8)
+# Listing Price by Boroughs
+p1 = ggplot(df, aes(x = `neighbourhood group`, y = price)) +
+  geom_boxplot() +
+  labs(title = "Airbnb Listing Price by Borough",
+       x = "Boroughs in New York City",
+       y = "Price") +
+  theme(legend.position = "bottom")
 ggplotly(p1)
 ```
 
 ### Figure 2
 
-```{r echo=FALSE}
-p2 = sb_nutr |> ggplot(aes(x = Calories, fill = Category)) + 
-  geom_histogram(binwidth = 50, alpha = 0.7) + 
-  facet_wrap(~ Category) 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Facet plot by neighbourhoods (with top 5 number of listings) showing scatterplots with linear regression lines of the total number of reviews and prices
+
+top_5 <- df %>% group_by(neighbourhood) %>%
+  summarise(Count=n())  %>%
+  arrange(desc(Count)) %>%
+  top_n(5, wt=Count)
+
+df_selected_neighbourhoods <- df %>% 
+  filter(neighbourhood %in% top_5$neighbourhood)
+
+# Create the facet plot
+p2 = ggplot(df_selected_neighbourhoods, aes(x = `number of reviews`, y = price)) +
+  geom_point() +  
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~neighbourhood) + 
+  labs(title = "Airbnb Listing Price vs Total Number of Reviews",
+       x = "Total Number of Reviews",
+       y = "Airbnb Listing Price") 
 
 ggplotly(p2)
 ```
