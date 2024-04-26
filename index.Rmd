@@ -1,5 +1,5 @@
 ---
-title: "JSC370 Final Project"
+title: "Decoding Airbnb: Price Influences in New York City"
 author: "Jessica Wang"
 output: 
     html_document:
@@ -7,7 +7,7 @@ output:
         toc_float: TRUE
 ---
 
-This is my JSC370 Final Project website.
+This project conducts an exploratory analysis of the Airbnb Open Data from Kaggle to investigate the factors that significantly influence Airbnb listing prices in New York City. By analyzing data spanning from 2008 to 2022, the project aims to uncover patterns and correlations between listing attributes such as location, ratings, and price. 
 
 ```{r echo=FALSE, message=FALSE}
 source("Project.R")
