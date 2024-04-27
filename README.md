@@ -19,4 +19,4 @@ This project is online [here](https://jessicayanwang.github.io/Airbnb_Analysis/)
 
 ### Report
 
-A pdf version of the report can be obtained [here](https://github.com/jessicayanwang/Airbnb_Analysis/blob/main/Report.pdf).
+A pdf version of the report can be obtained [here](https://github.com/jessicayanwang/Airbnb_Analysis/blob/main/Report/Report.pdf). The code to reproduce the report can be obtained [here](https://github.com/jessicayanwang/Airbnb_Analysis/blob/main/Report/Report.Rmd).
