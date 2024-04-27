@@ -31,6 +31,9 @@ The findings from this study are intended to:
 - Offer policymakers data-driven insights into the impact of short-term rentals on local housing markets and tourism.
 
 ## Data
+
+The processed dataset comprises 68,428 observations. Key variables relevant to this study are summarized in the sections below. Discrete variables are analyzed for their frequency distribution, with percentages. Continuous variables are summarized using their median values and interquartile ranges in the format: Median (Lower Quartile, Upper Quartile).
+
 ```{r echo=FALSE, message=FALSE}
 source("Project.R")
 ```
@@ -48,7 +51,7 @@ table1 <-
 
 table2 <- 
   df %>%
-  tbl_summary(include = c(`Construction year`, price, `service fee`,`number of reviews`)) %>% 
+  tbl_summary(include = c(`review rate number`, `room type`, cancellation_policy, `Construction year`, price, `service fee`,`number of reviews`, `availability 365`, `reviews per month`), label= c(`Construction year`~ "Construction Year", price~"Listing Price", `service fee`~ "Service Fee", `number of reviews`~"Total Number of Reviews", `availability 365`~"Number of Days This Listing is Available", `reviews per month`~"Reviews per Month", `review rate number`~"Ratings", `room type`~"Room Type", cancellation_policy~"Cancellation Policy")) %>% 
   as_gt() %>%
   gt::as_raw_html()
 

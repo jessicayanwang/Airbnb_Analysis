@@ -56,6 +56,9 @@ leaflet(neighbourhoods_price_df) %>%
             opacity = 1)
 ```
 
+This map visualization presents the average Airbnb listing prices across different neighborhoods in New York City. Prices are indicated by the color intensity of the circle markers, with darker colors representing higher prices. The top ten neighborhoods with the highest average prices are marked with additional details in popups that display the exact average price when clicked. This interactive map allows users to visually compare pricing across the city and identify high-value areas at a glance.
+
+
 ### Figure 3
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -95,5 +98,5 @@ p4 <- ggplot(df, aes(x = as.factor(`minimum nights`), y = price)) +
 ggplotly(p4)
 ```
 
-
+This boxplot displays the relationship between the minimum nights required for an Airbnb listing and its nightly price. Each box represents the price distribution for a specific minimum night requirement, showing the median price and the interquartile range. This visualization highlights how the length of stay required affects pricing, potentially offering insights into pricing strategies for short vs. long-term stays. It helps viewers understand pricing trends and anomalies associated with different stay durations in New York City Airbnb listings.
 
