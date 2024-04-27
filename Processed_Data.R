@@ -8,7 +8,7 @@ library(kableExtra)
 library(plotly)
 
 # Import the data
-df_raw <- data.table::fread("Airbnb_Open_Data.csv")
+df_raw <- data.table::fread("Data/Airbnb_Open_Data.csv")
 
 # Convert missing values to NAs
 df_raw$country[df_raw$country == ""] <- NA

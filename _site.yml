@@ -10,6 +10,8 @@ navbar:
   right:
     - icon: fa-github fa-lg
       href: https://github.com/jessicayanwang/Airbnb_Analysis.git
+    - text: "Report"
+      href: https://github.com/jessicayanwang/Airbnb_Analysis/blob/main/Report.pdf
 output:
   html_document:
     theme: cosmo
