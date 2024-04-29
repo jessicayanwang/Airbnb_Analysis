@@ -15,7 +15,7 @@ The significance of this project lies in its potential to provide insights that 
 ### Data
 
 1. The Airbnb Open Data can be obtained directly from Kaggle [here](https://www.kaggle.com/datasets/arianazmoudeh/airbnbopendata/data) or from this repository [here](https://github.com/jessicayanwang/Airbnb_Analysis/blob/main/Data/Airbnb_Open_Data.csv).
-2. The New York City 2020 Census Data can be obtained directly from the New York City Planning website [here](https://s-media.nyc.gov/agencies/dcp/assets/files/excel/data-tools/census/census2020/nyc_decennialcensusdata_2010_2020_change-core-geographies.xlsx) or from this repository [here](https://github.com/jessicayanwang/Airbnb_Analysis/blob/main/Data/nyc_census_2020.csv)
+2. The New York City 2020 Census Data can be obtained directly from the New York City Planning website [here](https://s-media.nyc.gov/agencies/dcp/assets/files/excel/data-tools/census/census2020/nyc_decennialcensusdata_2010_2020_change-core-geographies.xlsx) or from this repository [here](https://github.com/jessicayanwang/Airbnb_Analysis/blob/main/Data/nyc_census_2020.csv).
 
 ### Website
 
