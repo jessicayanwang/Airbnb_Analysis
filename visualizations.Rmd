@@ -52,8 +52,9 @@ leaflet(neighbourhoods_price_df) %>%
                    color = ~pal(MeanPrice)) %>%
   addMarkers(data = top_places, lng = ~MeanLong, lat = ~MeanLat, popup = ~as.character(round(MeanPrice, digits=0))) %>%
   addLegend('bottomright', pal = pal, values = neighbourhoods_price_df$MeanPrice,
-            title = 'Average Price of Airbnb Listings by Neighborhoods',
-            opacity = 1)
+            title = 'Neighborhoods Prices',
+            opacity = 0.5, # Adjusted opacity for less obstruction
+            labFormat = labelFormat(prefix = " $"))
 ```
 
 This map visualization presents the average Airbnb listing prices across different neighborhoods in New York City. Prices are indicated by the color intensity of the circle markers, with darker colors representing higher prices. The top ten neighborhoods with the highest average prices are marked with additional details in popups that display the exact average price when clicked. This interactive map allows users to visually compare pricing across the city and identify high-value areas at a glance.

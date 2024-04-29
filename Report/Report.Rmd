@@ -37,6 +37,9 @@ library(leaflet)
 library(kableExtra)
 library(webshot)
 library(htmlwidgets)
+library(gtsummary)
+library(gt)
+library(gridExtra)
 ```
 
 ```{r echo=FALSE, results='hide'}
@@ -201,6 +204,42 @@ ggplot(df, aes(x = `number of reviews`)) +
   labs(x = "Number of Reviews", y = "Frequency", title = "Distribution of Number of Reviews")
 ```
 
+```{r echo=FALSE, message=FALSE, results='asis'}
+
+table1 <- df %>%
+  tbl_summary(
+    include = c(host_identity_verified, `minimum nights`, `neighbourhood group`, instant_bookable), 
+    label = c(host_identity_verified ~ "Host Verified", 
+              `minimum nights` ~ "Minimum Nights Requirement",  
+              `neighbourhood group` ~ "Boroughs", 
+              instant_bookable ~ "Instant Bookable")
+  ) %>%
+  as_gt() %>% gt::as_latex()
+
+table2 <- df %>%
+  tbl_summary(
+    include = c(`review rate number`, `room type`, cancellation_policy, `Construction year`, price, `service fee`, `number of reviews`, `availability 365`, `reviews per month`), 
+    label = c(`Construction year` ~ "Construction Year", 
+              price ~ "Listing Price", 
+              `service fee` ~ "Service Fee", 
+              `number of reviews` ~ "Total Number of Reviews", 
+              `availability 365` ~ "Number of Days This Listing is Available", 
+              `reviews per month` ~ "Reviews per Month", 
+              `review rate number` ~ "Ratings", 
+              `room type` ~ "Room Type", 
+              cancellation_policy ~ "Cancellation Policy")
+  ) %>%
+  as_gt() %>% gt::as_latex()
+
+cat("\\begin{table}[H]\n\\begin{minipage}{.5\\linewidth}\n",
+    table1,
+    "\\end{minipage}\n\\begin{minipage}{.5\\linewidth}\n",
+    table2,
+    "\\end{minipage}\n\\end{table}")
+```
+
+The processed key variables are summarized in the table above. Discrete variables are analyzed for their frequency distribution, with percentages. Continuous variables are summarized using their median values and interquartile ranges in the format: Median (Lower Quartile, Upper Quartile).
+
 
 ## Results
 In this section, we proceed to study several key variables and their relationships with the Airbnb housing price. 
@@ -267,8 +306,9 @@ map <- leaflet(neighbourhoods_price_df) %>%
                    color = ~pal(MeanPrice)) %>%
   addMarkers(data = top_places, lng = ~MeanLong, lat = ~MeanLat, popup = ~as.character(round(MeanPrice, digits=0))) %>%
   addLegend('bottomright', pal = pal, values = neighbourhoods_price_df$MeanPrice,
-            title = 'Average Price of Airbnb Listings by Neighborhoods',
-            opacity = 1)
+            title = 'Neighborhoods Prices',
+            opacity = 0.5, # Adjusted opacity for less obstruction
+            labFormat = labelFormat(prefix = " $"))
 
 # Save the widget as an image
 map_image <- save_widget(map, "airbnb_price_map")
