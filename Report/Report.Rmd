@@ -9,7 +9,9 @@ output:
 
 ## Introduction
 
-In this project, we undertake an exploratory analysis of the Airbnb Open Data available on Kaggle (https://www.kaggle.com/datasets/arianazmoudeh/airbnbopendata/data). Airbnb is an online marketplace for lodging, homestays and vacation rentals. It provides a platform for hosts to offer a variety of accommodations to travelers. This dataset offers a rich compilation of Airbnb listings and reviews data in New York City from 2008 to 2022, covering various factors such as listing price, location, ratings, and other relevant attributes. 
+In this project, we undertake an exploratory analysis of the Airbnb Open Data available on Kaggle (https://www.kaggle.com/datasets/arianazmoudeh/airbnbopendata/data). Airbnb is an online marketplace for lodging, homestays, and vacation rentals, providing a platform for hosts to offer a variety of accommodations to travelers. This dataset offers a comprehensive compilation of Airbnb listings and reviews data in New York City from 2008 to 2022, covering various factors such as listing price, location, ratings, and other relevant attributes.
+
+To complement our analysis and provide a broader context for our findings, we have integrated additional demographic and housing data obtained from the New York City Planning website's 2020 Census page (https://www.nyc.gov/site/planning/planning-level/nyc-population/2020-census.page). This census dataset includes vital statistics such as total population, housing unit counts, occupancy details stratified by neighborhood. The primary dataset utilized for our core analysis remains the Airbnb Open Data, which we have enriched with the census information to gain a more nuanced understanding of the factors influencing Airbnb listing prices.
 
 The main question driving our research is: "What factors significantly influence the price of an Airbnb house listing?" We hypothesize that a variety of factors, from the geographical location of a listing to the ratings left by previous customers, have a significant impact on how hosts set their prices. Our goal is to analyze the dataset to identify any patterns, correlations, and potentially causal relationships between these factors and the prices of Airbnb listings.
 
@@ -17,7 +19,8 @@ The significance of this project lies in its potential to provide insights that 
 
 
 ## Methods
-This dataset comprises 102,599 observations across 26 variables. An initial assessment reveals several issues. Most notably, numerous variables exhibit missing data due to the unprocessed nature of the information sourced from the Airbnb open database. By standardizing these missing values to the NA format, we can determine the missing data rate for each variable. The results show that the missing data rates for all variables are relatively low; hence, we remove the observations with missing data.
+
+The Airbnb Open Data comprises 102,599 observations across 26 variables. An initial assessment reveals several issues. Most notably, numerous variables exhibit missing data due to the unprocessed nature of the information sourced from the Airbnb open database. By standardizing these missing values to the NA format, we can determine the missing data rate for each variable. The results show that the missing data rates for all variables are relatively low; hence, we remove the observations with missing data.
 
 Moreover, several variables present challenging data types for manipulation. For example, housing prices are recorded as character strings with a prefixed dollar sign. We address this by stripping the dollar sign and converting the prices to numerical values. Likewise, we transform categorical variables, such as the listing neighborhood, from strings to factors where suitable.
 
@@ -25,7 +28,7 @@ A detailed examination of each variable using bar plots and histograms highlight
 
 Through the barplots and histograms, we also uncover some additional information that does not require modification but can be helpful in future analysis. We observe that the number of reviews for the listings is heavily right-skewed with the majority of listings having few reviews but also several listings having as high as 1,024 number of total reviews. These outliers are retained since they are likely to represent natural variations in the total number of reviews instead of data collection errors. Furthermore, the distributions of listing prices and listing rates (on a Likert scale of 1 to 5) appear fairly uniform and thus do not require additional processing. 
 
-
+For the complementary New York City Census dataset, we focused our analysis on housing related variables such as total population, total number of housing units, number of occupied housing units and number of vacant housing units. We processed this data to match the neighborhood stratification used in the Airbnb dataset, aggregating data where neighborhoods were divided into multiple subparts, such as combining 'Bushwick (East)' and 'Bushwick (West)' into a single 'Bushwick' entry. The two datasets were then merged based on neighborhood names. Neighborhoods from the census data without corresponding matches in the Airbnb dataset were excluded to ensure consistency and relevance in our analysis. 
 
 ```{r, echo=FALSE, message=FALSE}
 library(data.table)
@@ -44,20 +47,65 @@ library(tidytext)
 library(stopwords)
 library(plotly)
 library(widgetframe)
+library(fuzzyjoin)
 ```
 
 ```{r echo=FALSE, results='hide'}
 # Import and check the data
 df_raw <- data.table::fread("../Data/Airbnb_Open_Data.csv")
+census_raw <- data.table::fread("../Data/nyc_census_2020.csv")
 head(df_raw)
 dim(df_raw)
-nrow(df_raw)
-ncol(df_raw)
+head(census_raw)
+dim(census_raw)
 
 # Check variables
 str(df_raw)
 summary(df_raw)
 ```
+
+
+```{r echo=FALSE, results = 'hide'}
+# Only keep the interested census variables
+census_raw <- subset(census_raw, select = c(Name, Pop1, HUnits, OcHU_1, VacHUs))
+# Rename the variables for clarity
+census <- census_raw %>% 
+  rename(
+    neighbourhood = Name,
+    total_population = Pop1,
+    occupied_HUnits = OcHU_1,
+    vacant_HUnits = VacHUs
+    )
+# Convert the variables to numeric variables
+census$total_population <- as.numeric(gsub(",", "", census$total_population))
+census$HUnits <- as.numeric(gsub(",", "", census$HUnits))
+census$occupied_HUnits <- as.numeric(gsub(",", "", census$occupied_HUnits))
+census$vacant_HUnits <- as.numeric(gsub(",", "", census$vacant_HUnits))
+```
+
+```{r echo = FALSE, warning = FALSE}
+# Sum up statistics if one neighbourhood is divided into multiple subparts. E.g.,  Bushwick (East) and Bushwick (West) would be summed up together as Bushwick.
+census <- census %>%
+  mutate(
+    # Handle the special case for Bedford-Stuyvesant
+    neighbourhood = if_else(
+      str_detect(neighbourhood, "Bedford-Stuyvesant"),
+      "Bedford-Stuyvesant",
+      if_else(
+        # Condition: If no "-" is detected AND brackets are detected
+        !str_detect(neighbourhood, "-") & str_detect(neighbourhood, "\\("),
+        # Then: Extract the name before the brackets and trim whitespace
+        str_trim(str_extract(neighbourhood, "^[^(]+")),
+        # Else: Keep the original neighbourhood name
+        neighbourhood
+      )
+    )
+  ) %>%
+  group_by(neighbourhood) %>%
+  summarise(across(where(is.numeric), sum, na.rm = TRUE))  # Summing up numeric statistics columns
+```
+
+
 ```{r echo=FALSE, results='hide'}
 # Check for missing values and convert missing values to NAs
 df_raw$country[df_raw$country == ""] <- NA
@@ -229,7 +277,7 @@ table2 <- df %>%
               price ~ "Listing Price", 
               `service fee` ~ "Service Fee", 
               `number of reviews` ~ "Total Number of Reviews", 
-              `availability 365` ~ "Number of Days This Listing is Available", 
+              `availability 365` ~ "Listing Available Days", 
               `reviews per month` ~ "Reviews per Month", 
               `review rate number` ~ "Ratings", 
               `room type` ~ "Room Type", 
@@ -237,28 +285,38 @@ table2 <- df %>%
   ) %>%
   as_gt() %>% gt::as_latex()
 
-cat("\\begin{table}[H]\n\\begin{minipage}{.5\\linewidth}\n",
+cat("\\begin{table}[H]\n",
+    "\\begin{minipage}[t]{.48\\linewidth}\n\\centering\n",
     table1,
-    "\\end{minipage}\n\\begin{minipage}{.5\\linewidth}\n",
+    "\\end{minipage}\n",
+    "\\hfill\n",
+    "\\begin{minipage}[t]{.48\\linewidth}\n\\centering\n",
     table2,
-    "\\end{minipage}\n\\end{table}")
+    "\\end{minipage}\n",
+    "\\end{table}")
 ```
 
-The processed key variables are summarized in the table above. Discrete variables are analyzed for their frequency distribution, with percentages. Continuous variables are summarized using their median values and interquartile ranges in the format: Median (Lower Quartile, Upper Quartile).
+The processed key variables are summarized in the tables above. Discrete variables are analyzed for their frequency distribution, with percentages. Continuous variables are summarized using their median values and interquartile ranges in the format: Median (Lower Quartile, Upper Quartile).
 
+\newpage
 
 ## Results
 In this section, we proceed to study several key variables and their relationships with the Airbnb housing price. 
 
 
-```{r, message=FALSE, echo=FALSE}
+```{r, message=FALSE, echo=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 # Listing Price by Boroughs
 ggplot(df, aes(x = `neighbourhood group`, y = price)) +
   geom_boxplot() +
   labs(title = "Airbnb Listing Price by Borough",
        x = "Boroughs in New York City",
        y = "Price") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom")  +
+  theme(
+  plot.title = element_text(size = 11, hjust=0.5), 
+  axis.title.x = element_text(size = 9), 
+  axis.title.y = element_text(size = 9)
+)
 ```
 
 The figure above displays boxplots of Airbnb listing prices grouped by the five boroughs of New York City. The plot suggests that the median listing price does not differ substantially among the boroughs. Moreover, the price ranges are also comparable across the boroughs. To gain further insights into the relationship between geographic location and listing price, we refine our analysis by increasing the granularity, moving from boroughs to individual neighborhoods within these boroughs.
@@ -282,7 +340,7 @@ kable_styled <- kable(table, caption = "Top 10 Neighbourhoods by Average Price",
 kable_styled
 ```
 
-The table above identifies the ten neighborhoods with the highest average listing price. In order to better visualize this information geographically, a map by average listing price is displayed below. 
+Table 3 above identifies the ten neighborhoods with the highest average listing price. In order to better visualize this information geographically, a map by average listing price is displayed below. 
 
 
 ```{r echo=FALSE, results='asis'}
@@ -327,19 +385,24 @@ cat("![](", map_image, ")\n")
 The leaflet map presented above illustrates the average prices of Airbnb listings by neighborhood in New York City. An interactive version of this map can be found on the visualization tab of the project website. Circle markers are color-coded according to the average price. Darker colors (such as purple) correspond to lower average prices, while brighter colors (like yellow) signify higher average prices. Additionally, ten blue pins highlight the neighborhoods with the top ten highest average listing prices. The map reveals a higher density of Airbnb listings in areas closer to the city center or downtown, such as Lower Manhattan, as opposed to more peripheral areas like Staten Island. This observation aligns with the typical demand patterns in popular tourist destinations. However, the top ten neighborhoods with highest average prices are situated in somewhat suburb areas. This pattern could be due to the fact that these locations have fewer competitions and offer unique accommodations that cater to niche markets or provide luxury experiences. Consequently, while the dense urban core of the city offers a high number of listings likely aiming at a broad market, the more residential and less saturated suburban areas provide distinctive options with potentially higher prices. 
 
 
-```{r, message=FALSE, echo=FALSE}
+```{r, message=FALSE, echo=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 # Listing Price by Minimum Nights
 ggplot(df, aes(x = as.factor(`minimum nights`), y = price)) +
   geom_boxplot() +
   labs(title = "Airbnb Listing Price by Minimum Nights Requirement",
        x = "Minimum Nights Requirement",
        y = "Price (per night)") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom")  +
+  theme(
+  plot.title = element_text(size = 11, hjust=0.5), 
+  axis.title.x = element_text(size = 9), 
+  axis.title.y = element_text(size = 9)
+)
 ```
 
 The boxplot above visualizes the distribution of the Airbnb listing prices per night across different minimum stay requirements, ranging from 1 to 9 nights. Observing the median prices, there is no clear upward or downward trend associated with the length of the minimum stay requirement. The medians appear relatively stable across different categories. However, it is noteworthy that the median listing price for accommodations requiring a 9-night minimum stay is comparatively lower than for other categories. This decrease suggests that hosts may offer more competitive prices for longer stays to attract guests willing to commit to this duration.
 
-```{r echo=FALSE, message=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 # Facet plot by neighbourhoods (with top 5 number of listings) showing scatterplots with linear regression lines of the total number of reviews and prices
 
 top_5 <- df %>% group_by(neighbourhood) %>%
@@ -357,12 +420,17 @@ ggplot(df_selected_neighbourhoods, aes(x = `number of reviews`, y = price)) +
   facet_wrap(~neighbourhood) + 
   labs(title = "Airbnb Listing Price vs Total Number of Reviews",
        x = "Total Number of Reviews",
-       y = "Airbnb Listing Price") 
+       y = "Airbnb Listing Price")  +
+  theme(
+  plot.title = element_text(size = 11, hjust=0.5), 
+  axis.title.x = element_text(size = 9), 
+  axis.title.y = element_text(size = 9)
+)
 ```
 
 The facet plot displays the relationship between the total number of reviews and Airbnb listing prices across five neighborhoods with the highest count of listings. The visualization indicates that for neighborhoods like Hell's Kitchen and Williamsburg, there is a slight positive trend, indicating that listings with more reviews tend to have higher prices. In contrast, neighborhoods like Bedford-Stuyvesant and Bushwick show a flatter regression line, suggesting a weaker relationship between the number of reviews and price. Harmlem has a slightly negative trend, implying that more reviews could correlate with lower prices.There is no single clear pattern dominating across the neighborhoods, which suggests that while there may be some local trends within each neighborhood regarding reviews and pricing, they do not appear to be strong or consistent across different areas.
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 # identified the top 20 words in the Airbnb naming.
 
 # Add additional stopwords
@@ -376,14 +444,19 @@ tokens <- df |>
   head(20) |>
   ggplot(aes(reorder(word,n), n))+
   geom_col()+
-  coord_flip()
+  coord_flip() +
+  theme(
+  plot.title = element_text(size = 11, hjust=0.5), 
+  axis.title.x = element_text(size = 9), 
+  axis.title.y = element_text(size = 9)
+)
 
 tokens
 ```
 
 The bar chart above displays the top 20 most frequently used words in the names of Airbnb listings in New York City, after excluding common English stopwords and specific terms that are overly generic or location-based, such as 'NYC', 'room', 'bedroom', 'bed', 'Manhattan', 'Williamsburg', and 'Brooklyn'. Additionally, any numeric terms have been filtered out to focus solely on descriptive words. The words are presented in descending order of frequency, showcasing that descriptors such as "private", "cozy", and "spacious" are most popular among hosts when naming their listings. 
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width=5, fig.height=3, fig.align='center'}
 
 topwords <- df |>
   unnest_tokens(word, NAME, token="words") |>
@@ -403,7 +476,12 @@ ggplot(filtered_data, aes(x = word, y = price)) +
   labs(title = "Airbnb Listing Prices by Top Keywords",
        x = "Keyword",
        y = "Price") +
-  theme_minimal()
+  theme(
+  plot.title = element_text(size = 11, hjust=0.5), 
+  axis.title.x = element_text(size = 9), 
+  axis.title.y = element_text(size = 9)
+)
+
 ```
 
 In our investigation into how specific keywords in Airbnb listing titles affect price distribution, we observed some counterintuitive trends regarding the perceived value and pricing strategies among hosts. Notably, from the figure above we see that listings featuring the keyword 'luxury' surprisingly is not associated with highest prices; instead, they exhibit lower median prices compared to other popular keywords. This could be attributed to several factors:
@@ -425,7 +503,7 @@ model <- lm(price ~ `number of reviews` + `minimum nights`  + `review rate numbe
 model_summary <- summary(model)
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE }
 # Extract coefficients to a data frame
 model_coef <- data.frame(Estimate = model_summary$coefficients[, "Estimate"],
                          StdError = model_summary$coefficients[, "Std. Error"],
@@ -451,6 +529,94 @@ The model's intercept is approximately 1502.87, suggesting that the baseline pri
 However, the model's overall R-squared values are extremely low (0.0002 for multiple R-squared), indicating that the variables included explain almost none of the variability in Airbnb listing prices. The F-statistic has a p-value of 0.01985, suggesting that the model is statistically significant as a whole, yet its explanatory power is extremely limited. Therefore, while some coefficients are significant, other important factors not included in the model likely influence Airbnb prices. Future attempts to improve the model should explore the inclusion of additional relevant variables and the use of non-linear models that may capture the complexity of the data better.
 
 
+Given the limited explanatory power of our initial model, as reflected by the very low R-squared values, it becomes evident that there are additional factors affecting Airbnb pricing that are not captured within our current dataset. This realization prompts us to broaden our analytical scope and consider external variables that could impact rental prices. Accordingly, we turn to the New York City Census data, which offers insights into housing availability and demographic characteristics at the neighborhood level. By integrating this census data, we aim to investigate how factors such as population density, housing unit availability, and occupancy rates may influence Airbnb pricing strategies. 
+
+```{r echo=FALSE}
+# Convert the join columns to lower case for both data frames
+census <- census %>% 
+  mutate(neighbourhood = tolower(neighbourhood))
+df <- df %>% 
+  mutate(neighbourhood = tolower(neighbourhood))
+
+# Merge datasets
+merged_data <- inner_join(census, df, by = c("neighbourhood"))
+```
+
+```{r echo=FALSE}
+top_k <- merged_data %>% group_by(neighbourhood) %>%
+  summarise(Count=n())  %>%
+  arrange(desc(Count)) %>%
+  top_n(30, wt=Count)
+
+df_selected_neighbourhoods <- merged_data %>% 
+  filter(neighbourhood %in% top_k$neighbourhood)
+
+# Calculate the average price for each neighbourhood
+average_prices <- df_selected_neighbourhoods %>%
+  group_by(neighbourhood) %>%
+  summarise(average_price = mean(price, na.rm = TRUE))
+
+# Join the average price back to the census data for each neighbourhood
+census_with_price <- df_selected_neighbourhoods %>%
+  select(neighbourhood, total_population, HUnits, occupied_HUnits, vacant_HUnits) %>%
+  distinct() %>%
+  left_join(average_prices, by = "neighbourhood")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
+# Population Density vs. Airbnb Price
+ggplot(census_with_price, aes(x = total_population, y = average_price)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue", se = TRUE) +
+  labs(title = "Population Density vs. Airbnb Price",
+       x = "Total Population",
+       y = "Average Airbnb Price")  +
+  theme(
+  plot.title = element_text(size = 11, hjust=0.5), 
+  axis.title.x = element_text(size = 9), 
+  axis.title.y = element_text(size = 9)
+)
+```
+
+The plot above indicates a negative correlation between neighborhood population and average Airbnb prices in New York City: as population increases, average prices tend to decrease. This trend might suggest that in densely populated areas, where the supply of potential Airbnb listings is higher due to a greater number of housing units, there is more competition among hosts, leading to lower prices. Additionally, these areas may not command the same premium as less dense neighborhoods, which might offer a more unique or less readily available experience for travelers. The spread of data points around the trend line, however, indicates that population is not the sole determinant of price, and other factors are also at play.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
+# Housing Units vs. Airbnb Price
+ggplot(census_with_price, aes(x = HUnits, y = average_price)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue", se = TRUE) +
+  labs(title = "Total Number of Housing Units vs. Airbnb Price",
+       x = "Total Number of Housing Units",
+       y = "Average Airbnb Price")  +
+  theme(
+  plot.title = element_text(size = 11, hjust=0.5), 
+  axis.title.x = element_text(size = 9), 
+  axis.title.y = element_text(size = 9)
+)
+```
+
+This plot shows a trend where neighborhoods with a higher number of total housing units tend to have lower average Airbnb prices. This pattern is likely correlated with the population size of these areas, as neighborhoods with more housing units generally have larger populations. The abundance of housing may lead to increased competition among Airbnb hosts, which could drive prices down. The downward slope of the best fit line suggests that as housing availability goes up, market saturation might occur, contributing to a decrease in average price due to higher supply. This aligns with economic principles where increased supply, all else being equal, can lower prices.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=3, fig.align='center'}
+# Vacancy Rates vs. Airbnb Price
+census_with_price <- census_with_price %>%
+  mutate(vacancy_rate = vacant_HUnits/HUnits)
+
+ggplot(census_with_price, aes(x = vacancy_rate, y = average_price)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue", se = TRUE) +
+  labs(title = "Vacancy Rates vs. Airbnb Price",
+       x = "Vacancy Rate",
+       y = "Average Airbnb Price")  +
+  theme(
+  plot.title = element_text(size = 11, hjust=0.5), 
+  axis.title.x = element_text(size = 9), 
+  axis.title.y = element_text(size = 9)
+)
+```
+
+The plot above displays the relationship between neighborhood housing unit vacancy rates and average Airbnb prices. The trend line suggests a relatively flat relationship, indicating that the average Airbnb price does not significantly vary with changes in the vacancy rate across neighborhoods. A potential explanation for this observation could be that the vacancy rate in a neighborhood reflects a balance between available long-term housing and transient accommodations. High vacancy rates may not necessarily drive down Airbnb prices, as they could indicate a lack of demand for permanent residency rather than an abundance of short-term rental opportunities. Conversely, low vacancy rates could imply a healthy demand for housing but may not affect short-term rental pricing if Airbnb listings cater to tourists rather than residents seeking long-term leases. Therefore, we observe that while one might expect higher vacancy rates to correlate with lower rental prices due to increased supply, the specific market for short-term rentals via platforms like Airbnb may operate under different dynamics than traditional housing markets.
+
 
 ## Conclusion and Summary
 In this exploratory analysis of the Airbnb Open Data for New York City, several key insights have emerged about factors influencing Airbnb listing prices. Geographic location plays a pivotal role.
@@ -462,5 +628,7 @@ Moreover, our analysis discovered surprising trends related to the keywords used
 
 Our linear model, incorporating the number of reviews, minimum nights requirement, and customer ratings as predictors, indicated a statistically significant yet practically small effect of these variables on listing prices. Notably, higher customer ratings were associated with slightly lower prices, possibly reflecting a strategy by hosts to maintain high ratings through competitive pricing.
 
-However, the model's low explanatory power underscores the complexity of the Airbnb pricing mechanism and suggests the need for a more nuanced model. Future research should consider incorporating a broader set of variables, such as property type and property construction year. Moreover, we can also employ more sophisticated modeling techniques to better capture the multifaceted nature of Airbnb pricing strategies. This analysis lays the groundwork for further investigation into the pricing landscape of Airbnb listings, offering a foundation for hosts, guests, and policymakers to better understand and navigate the sharing economy.
+However, the model's low explanatory power underscores the complexity of the Airbnb pricing mechanism and suggests the need for more comprehensive analysis. Integrating New York City Census data into our investigation has enriched our comprehension of the Airbnb market. We observed a negative correlation between neighborhood population and average Airbnb prices. This observation indicates that areas with higher populations, which likely have more housing units, see increased competition among Airbnb hosts and potentially driving down prices. Similarly, when considering the total number of housing units, a negative relationship with average Airbnb prices was also observed. However, our findings regarding vacancy rates did not show a significant impact on Airbnb prices, suggesting that the short-term nature of Airbnb's business may not be as affected by long-term housing market dynamics as initially thought.
+
+Future research should consider incorporating a broader set of variables and demographic information. Moreover, we can also employ more sophisticated modeling techniques to better capture the multifaceted nature of Airbnb pricing strategies. This analysis lays the groundwork for further investigation into the pricing landscape of Airbnb listings, offering a foundation for hosts, guests, and policymakers to better understand and navigate the sharing economy.
 
