@@ -17,17 +17,33 @@ source("Processed_Data.R")
 ### Figure 1
 
 ```{r echo=FALSE}
-# Listing Price by Boroughs
-p1 = ggplot(df, aes(x = `neighbourhood group`, y = price)) +
+
+stopwords2 <- c(stopwords("english"), "nyc", "room", "bedroom", "bed", "manhattan", "williamsburg", "brooklyn", "w", "apartment", "studio", "apt", "loft", "bushwick", "location", "one")
+
+topwords <- df |>
+  unnest_tokens(word, NAME, token="words") |>
+  filter(!word %in% stopwords2) |>
+  filter(!str_detect(word, "\\d")) |> # also filter out numbers
+  count(word, sort=T) |>
+  head(20)
+  
+filtered_data <- df |>
+  unnest_tokens(word, NAME, token="words") |>
+  filter(word %in% topwords$word)
+
+# Plotting the price boxplot for each keyword
+p1 <- ggplot(filtered_data, aes(x = word, y = price)) +
   geom_boxplot() +
-  labs(title = "Airbnb Listing Price by Borough",
-       x = "Boroughs in New York City",
+  coord_flip() + 
+  labs(title = "Airbnb Listing Prices by Top Keywords",
+       x = "Keyword",
        y = "Price") +
-  theme(legend.position = "bottom")
+  theme_minimal()
+
 ggplotly(p1)
 ```
 
-This boxplot visualizes the distribution of Airbnb listing prices across the different boroughs of New York City. Each box represents the interquartile range of prices within a borough, highlighting the median, and potentially identifying outliers. This visualization helps to compare the typical pricing structures across boroughs and can inform both hosts and guests about expected costs in different areas.
+This boxplot illustrates the variation in median prices associated with the top 20 most frequently used keywords in Airbnb listing titles across New York City. Notably, despite its frequent usage, the keyword 'luxury' is associated with lower median prices, while 'village' and 'quiet' tend to command higher prices, highlighting the influence of specific descriptive terms on pricing perceptions. This visualization underscores the impact of keyword selection on potential pricing strategies within the Airbnb market.
 
 ### Figure 2
 

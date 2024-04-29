@@ -40,6 +40,10 @@ library(htmlwidgets)
 library(gtsummary)
 library(gt)
 library(gridExtra)
+library(tidytext)
+library(stopwords)
+library(plotly)
+library(widgetframe)
 ```
 
 ```{r echo=FALSE, results='hide'}
@@ -118,7 +122,7 @@ df$`service fee` <- as.numeric(gsub("\\$|,", "", df$`service fee`))
 
 ```{r, echo=FALSE, results='hide'}
 # We remove the non-informative/non-key variables
-df <- subset(df, select = -c(NAME, `host name`, `last review`, house_rules, license, `calculated host listings count`))
+df <- subset(df, select = -c(`host name`, `last review`, house_rules, license, `calculated host listings count`))
 
 # Convert variable to factors as appropriate
 df$host_identity_verified <- as.factor(df$host_identity_verified)
@@ -207,6 +211,7 @@ ggplot(df, aes(x = `number of reviews`)) +
 ```{r echo=FALSE, message=FALSE, results='asis'}
 
 table1 <- df %>%
+  select(!c(NAME)) %>%
   tbl_summary(
     include = c(host_identity_verified, `minimum nights`, `neighbourhood group`, instant_bookable), 
     label = c(host_identity_verified ~ "Host Verified", 
@@ -217,6 +222,7 @@ table1 <- df %>%
   as_gt() %>% gt::as_latex()
 
 table2 <- df %>%
+  select(!c(NAME)) %>%
   tbl_summary(
     include = c(`review rate number`, `room type`, cancellation_policy, `Construction year`, price, `service fee`, `number of reviews`, `availability 365`, `reviews per month`), 
     label = c(`Construction year` ~ "Construction Year", 
@@ -356,6 +362,63 @@ ggplot(df_selected_neighbourhoods, aes(x = `number of reviews`, y = price)) +
 
 The facet plot displays the relationship between the total number of reviews and Airbnb listing prices across five neighborhoods with the highest count of listings. The visualization indicates that for neighborhoods like Hell's Kitchen and Williamsburg, there is a slight positive trend, indicating that listings with more reviews tend to have higher prices. In contrast, neighborhoods like Bedford-Stuyvesant and Bushwick show a flatter regression line, suggesting a weaker relationship between the number of reviews and price. Harmlem has a slightly negative trend, implying that more reviews could correlate with lower prices.There is no single clear pattern dominating across the neighborhoods, which suggests that while there may be some local trends within each neighborhood regarding reviews and pricing, they do not appear to be strong or consistent across different areas.
 
+```{r echo=FALSE}
+# identified the top 20 words in the Airbnb naming.
+
+# Add additional stopwords
+stopwords2 <- c(stopwords("english"), "nyc", "room", "bedroom", "bed", "manhattan", "williamsburg", "brooklyn", "w", "apartment", "studio", "apt", "loft", "bushwick", "location", "one")
+
+tokens <- df |>
+  unnest_tokens(word, NAME, token="words") |>
+  filter(!word %in% stopwords2) |>
+  filter(!str_detect(word, "\\d")) |> # also filter out numbers
+  count(word, sort=T) |>
+  head(20) |>
+  ggplot(aes(reorder(word,n), n))+
+  geom_col()+
+  coord_flip()
+
+tokens
+```
+
+The bar chart above displays the top 20 most frequently used words in the names of Airbnb listings in New York City, after excluding common English stopwords and specific terms that are overly generic or location-based, such as 'NYC', 'room', 'bedroom', 'bed', 'Manhattan', 'Williamsburg', and 'Brooklyn'. Additionally, any numeric terms have been filtered out to focus solely on descriptive words. The words are presented in descending order of frequency, showcasing that descriptors such as "private", "cozy", and "spacious" are most popular among hosts when naming their listings. 
+
+```{r echo=FALSE}
+
+topwords <- df |>
+  unnest_tokens(word, NAME, token="words") |>
+  filter(!word %in% stopwords2) |>
+  filter(!str_detect(word, "\\d")) |> # also filter out numbers
+  count(word, sort=T) |>
+  head(20)
+  
+filtered_data <- df |>
+  unnest_tokens(word, NAME, token="words") |>
+  filter(word %in% topwords$word)
+
+# Plotting the price boxplot for each keyword
+ggplot(filtered_data, aes(x = word, y = price)) +
+  geom_boxplot() +
+  coord_flip() + 
+  labs(title = "Airbnb Listing Prices by Top Keywords",
+       x = "Keyword",
+       y = "Price") +
+  theme_minimal()
+```
+
+In our investigation into how specific keywords in Airbnb listing titles affect price distribution, we observed some counterintuitive trends regarding the perceived value and pricing strategies among hosts. Notably, from the figure above we see that listings featuring the keyword 'luxury' surprisingly is not associated with highest prices; instead, they exhibit lower median prices compared to other popular keywords. This could be attributed to several factors:
+
+1. Overuse of the Term 'Luxury': The term 'luxury' may be overused in marketing contexts, often being applied to a wide range of properties, including those that do not necessarily offer true luxury experiences. This overuse can dilute the term's effectiveness in signaling genuine high-end offerings.
+
+2. Consumer Expectations: Travelers might be skeptical of listings labeled 'luxury' without sufficient validation through reviews or ratings, especially if the price seems incongruous with their expectations for luxury accommodations. This skepticism might drive down the median price as potential guests opt for listings that offer clearer value or whose luxury claims are substantiated by strong reviews.
+
+On the other hand, listings that incorporate 'village' or 'quiet' in their titles command higher median prices. These keywords seem to attract travelers for several reasons:
+
+1. Desire for Specific Experiences: Keywords like 'village' and 'quiet' may appeal strongly to those seeking a particular type of experience – one that promises a peaceful setting. This appeal can drive up demand and, consequently, prices, as these terms align well with the desires of guests looking for retreats away from bustling city centers.
+2. Limited Availability and High Demand: Listings that can credibly claim to offer 'quiet' environments in urban settings such as New York City are likely scarce but in high demand. Therefore, this limited availability can make these listings more valuable.
+
+These findings underscore the importance of keyword choice in listing titles as a significant factor in pricing strategy. They highlight how certain terms can either enhance or detract from perceived value, influenced by overuse, consumer expectations, or the genuine appeal of the experience promised by the keyword.
+
 ```{r echo=FALSE, results='hide'}
 # A linear model of price
 model <- lm(price ~ `number of reviews` + `minimum nights`  + `review rate number`, data = df)
@@ -394,6 +457,8 @@ In this exploratory analysis of the Airbnb Open Data for New York City, several 
 Contrary to our intuitions, listings in close proximity to downtown areas, such as Lower Manhattan, exhibited medium average prices, neither significantly low nor high when compared to more peripheral neighborhoods. This suggests a balanced market in these prime locations, where a high demand from tourists is met with a substantial supply of listings. Interestingly, the neighborhoods with the highest average prices were found in more suburban areas. A potential explanation is that these locations offer unique accommodations or luxury experiences in markets with less competition.
 
 The analysis of minimum nights requirement revealed that listings with a 9-night minimum stay tend to have lower median prices, possibly as an incentive for longer-term stays. The relationship between the total number of reviews and listing prices showed varying local trends across different neighborhoods, indicating that the impact of reviews on pricing might be context-specific.
+
+Moreover, our analysis discovered surprising trends related to the keywords used in listing titles. Listings featuring the keyword 'luxury' did not command higher prices as might be expected; instead, they exhibited lower median prices compared to other keywords. In contrast, listings with keywords such as 'village' or 'quiet' commanded the highest median prices, suggesting that these terms attract guests willing to pay a premium for specific experiences. 
 
 Our linear model, incorporating the number of reviews, minimum nights requirement, and customer ratings as predictors, indicated a statistically significant yet practically small effect of these variables on listing prices. Notably, higher customer ratings were associated with slightly lower prices, possibly reflecting a strategy by hosts to maintain high ratings through competitive pricing.
 

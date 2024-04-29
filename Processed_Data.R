@@ -5,7 +5,15 @@ library(knitr)
 library(ggplot2)
 library(leaflet)
 library(kableExtra)
+library(webshot)
+library(htmlwidgets)
+library(gtsummary)
+library(gt)
+library(gridExtra)
+library(tidytext)
+library(stopwords)
 library(plotly)
+library(widgetframe)
 
 # Import the data
 df_raw <- data.table::fread("Data/Airbnb_Open_Data.csv")
@@ -42,7 +50,7 @@ df$price <- as.numeric(gsub("\\$|,", "", df$price))
 df$`service fee` <- as.numeric(gsub("\\$|,", "", df$`service fee`))
 
 # We remove the non-informative/non-key variables
-df <- subset(df, select = -c(NAME, `host name`, `last review`, house_rules, license, `calculated host listings count`))
+df <- subset(df, select = -c(`host name`, `last review`, house_rules, license, `calculated host listings count`))
 
 # Convert variable to factors as appropriate
 df$host_identity_verified <- as.factor(df$host_identity_verified)

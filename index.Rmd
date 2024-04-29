@@ -44,6 +44,7 @@ library(gt)
 
 table1 <- 
   df %>%
+  select(!c(NAME)) %>%
   tbl_summary(include = c(host_identity_verified, `minimum nights`, `neighbourhood group`, instant_bookable), label = c(host_identity_verified ~ "Host Verified", `minimum nights` ~ "Minimum Nights Requirement",  `neighbourhood group` ~ "Boroughs", instant_bookable~"Instant Bookable")) %>%
   as_gt() %>%
   gt::as_raw_html()
@@ -51,6 +52,7 @@ table1 <-
 
 table2 <- 
   df %>%
+  select(!c(NAME)) %>%
   tbl_summary(include = c(`review rate number`, `room type`, cancellation_policy, `Construction year`, price, `service fee`,`number of reviews`, `availability 365`, `reviews per month`), label= c(`Construction year`~ "Construction Year", price~"Listing Price", `service fee`~ "Service Fee", `number of reviews`~"Total Number of Reviews", `availability 365`~"Number of Days This Listing is Available", `reviews per month`~"Reviews per Month", `review rate number`~"Ratings", `room type`~"Room Type", cancellation_policy~"Cancellation Policy")) %>% 
   as_gt() %>%
   gt::as_raw_html()
