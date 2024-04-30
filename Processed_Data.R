@@ -17,6 +17,44 @@ library(widgetframe)
 
 # Import the data
 df_raw <- data.table::fread("Data/Airbnb_Open_Data.csv")
+census_raw <- data.table::fread("Data/nyc_census_2020.csv")
+
+# Only keep the interested census variables
+census_raw <- subset(census_raw, select = c(Name, Pop1, HUnits, OcHU_1, VacHUs))
+# Rename the variables for clarity
+census <- census_raw %>% 
+  rename(
+    neighbourhood = Name,
+    total_population = Pop1,
+    occupied_HUnits = OcHU_1,
+    vacant_HUnits = VacHUs
+  )
+# Convert the variables to numeric variables
+census$total_population <- as.numeric(gsub(",", "", census$total_population))
+census$HUnits <- as.numeric(gsub(",", "", census$HUnits))
+census$occupied_HUnits <- as.numeric(gsub(",", "", census$occupied_HUnits))
+census$vacant_HUnits <- as.numeric(gsub(",", "", census$vacant_HUnits))
+
+# Sum up statistics if one neighbourhood is divided into multiple subparts. 
+# E.g.,  Bushwick (East) and Bushwick (West) would be summed up together as Bushwick.
+census <- census %>%
+  mutate(
+    # Handle the special case for Bedford-Stuyvesant
+    neighbourhood = if_else(
+      str_detect(neighbourhood, "Bedford-Stuyvesant"),
+      "Bedford-Stuyvesant",
+      if_else(
+        # Condition: If no "-" is detected AND brackets are detected
+        !str_detect(neighbourhood, "-") & str_detect(neighbourhood, "\\("),
+        # Then: Extract the name before the brackets and trim whitespace
+        str_trim(str_extract(neighbourhood, "^[^(]+")),
+        # Else: Keep the original neighbourhood name
+        neighbourhood
+      )
+    )
+  ) %>%
+  group_by(neighbourhood) %>%
+  summarise(across(where(is.numeric), sum, na.rm = TRUE))  # Summing up numeric statistics columns
 
 # Convert missing values to NAs
 df_raw$country[df_raw$country == ""] <- NA
@@ -79,3 +117,12 @@ df <- df %>%
 # Filter out outliers for availability 365
 df <- df %>%
   filter(`availability 365` >= 0 & `availability 365` <= 365)
+
+# Convert the join columns to lower case for both data frames
+census <- census %>% 
+  mutate(neighbourhood = tolower(neighbourhood))
+df <- df %>% 
+  mutate(neighbourhood = tolower(neighbourhood))
+
+# Merge datasets
+merged_data <- inner_join(census, df, by = c("neighbourhood"))

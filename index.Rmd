@@ -10,7 +10,7 @@ output:
         theme: cosmo
 ---
 
-# Overview
+## Overview
 
 This project conducts an exploratory analysis of Airbnb listing data from New York City, sourced from the open dataset available on Kaggle. The focus is on understanding the various factors that influence the pricing of Airbnb listings, with an aim to provide insights that could benefit hosts, guests, and policymakers engaged with the sharing economy.
 
@@ -32,9 +32,11 @@ The findings from this study are intended to:
 
 ## Data
 
-The processed dataset comprises 68,428 observations. Key variables relevant to this study are summarized in the sections below. Discrete variables are analyzed for their frequency distribution, with percentages. Continuous variables are summarized using their median values and interquartile ranges in the format: Median (Lower Quartile, Upper Quartile).
+### New York Airbnb Open Data
 
-```{r echo=FALSE, message=FALSE}
+The original unprocessed data can be obtained [here](https://www.kaggle.com/datasets/arianazmoudeh/airbnbopendata/data). The processed dataset comprises 68,428 observations. Key variables relevant to this study are summarized in the sections below. Discrete variables are analyzed for their frequency distribution, with percentages. Continuous variables are summarized using their median values and interquartile ranges in the format: Median (Lower Quartile, Upper Quartile).
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 source("Processed_Data.R")
 ```
 
@@ -63,3 +65,5 @@ cat('<div style="width: 50%;">', table2, '</div>')
 cat('</div>')
 ```
 
+### New York City 2020 Census Data
+We complement our analysis with data from the New York City Census, obtained from the NYC Department of City Planning. This dataset provides insights into housing-related variables such as total population, total housing units, number of occupied housing units, and number of vacant housing units by neighbourhoods. The census data is processed and merged with the Airbnb dataset to enhance our understanding of the factors influencing Airbnb listing prices. The original unprocessed data can be obtained [here](https://s-media.nyc.gov/agencies/dcp/assets/files/excel/data-tools/census/census2020/nyc_decennialcensusdata_2010_2020_change-core-geographies.xlsx).

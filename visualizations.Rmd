@@ -7,7 +7,7 @@ output:
         toc_float: TRUE
 ---
 
-```{r echo=FALSE, message=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 source("Processed_Data.R")
 ```
 
@@ -116,4 +116,52 @@ ggplotly(p4)
 ```
 
 This boxplot displays the relationship between the minimum nights required for an Airbnb listing and its nightly price. Each box represents the price distribution for a specific minimum night requirement, showing the median price and the interquartile range. This visualization highlights how the length of stay required affects pricing, potentially offering insights into pricing strategies for short vs. long-term stays. It helps viewers understand pricing trends and anomalies associated with different stay durations in New York City Airbnb listings.
+
+### Figure 5
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+top_k <- merged_data %>% group_by(neighbourhood) %>%
+  summarise(Count=n())  %>%
+  arrange(desc(Count)) %>%
+  top_n(30, wt=Count)
+
+df_selected_neighbourhoods <- merged_data %>% 
+  filter(neighbourhood %in% top_k$neighbourhood)
+
+# Calculate the average price for each neighbourhood
+average_prices <- df_selected_neighbourhoods %>%
+  group_by(neighbourhood) %>%
+  summarise(average_price = mean(price, na.rm = TRUE))
+
+# Join the average price back to the census data for each neighbourhood
+census_with_price <- df_selected_neighbourhoods %>%
+  select(neighbourhood, total_population, HUnits, occupied_HUnits, vacant_HUnits) %>%
+  distinct() %>%
+  left_join(average_prices, by = "neighbourhood")
+
+p5 <- ggplot(census_with_price, aes(x=total_population, y=average_price, color=neighbourhood)) +
+  geom_point(alpha=0.8)  +
+  geom_smooth(method = "lm", color = "blue", se=FALSE) +
+  labs(title = "Population Density vs. Airbnb Price",
+       x = "Total Population",
+       y = "Average Airbnb Price")
+
+ggplotly(p5)
+
+census_with_price <- census_with_price %>%
+  mutate(vacancy_rate = vacant_HUnits/HUnits)
+
+p6 <- ggplot(census_with_price, aes(x = vacancy_rate, y = average_price, color=neighbourhood)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  labs(title = "Vacancy Rates vs. Airbnb Price",
+       x = "Vacancy Rate",
+       y = "Average Airbnb Price")
+ggplotly(p6)
+
+```
+
+The first plot, "Population Density vs. Airbnb Price," explores the relationship between population density and the average price of Airbnb listings across the top 30 neighborhoods in New York City by the number of Airbnb listings. Each point represents a neighborhood, with the x-axis indicating the total population and the y-axis representing the average Airbnb price. The blue line depicts the trend line fitted through the data points, providing insights into how population density influences pricing.
+
+The second plot, "Vacancy Rates vs. Airbnb Price," examines how vacancy rates in different neighborhoods correlate with the average price of Airbnb listings. Each point on the plot represents a neighborhood, with the x-axis showing the vacancy rate and the y-axis indicating the average Airbnb price. The vacancy rate in each neighborhood is calculated by dividing the number of vacant housing units by the total number of housing units, providing a measure of housing availability relative to demand. The blue line represents the trend line fitted to the data, offering insights into how vacancy rates impact Airbnb pricing across neighborhoods in New York City.
+
 

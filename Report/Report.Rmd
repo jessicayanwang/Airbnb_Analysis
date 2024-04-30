@@ -47,7 +47,6 @@ library(tidytext)
 library(stopwords)
 library(plotly)
 library(widgetframe)
-library(fuzzyjoin)
 ```
 
 ```{r echo=FALSE, results='hide'}

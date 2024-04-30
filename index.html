@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jessica Wang" />
 
-<meta name="date" content="2024-04-29" />
+<meta name="date" content="2024-04-30" />
 
 <title>Decoding Airbnb: Price Influences in New York City</title>
 
@@ -352,19 +352,20 @@ div.tocify {
 <h1 class="title toc-ignore">Decoding Airbnb: Price Influences in New
 York City</h1>
 <h4 class="author">Jessica Wang</h4>
-<h4 class="date">April 29, 2024</h4>
+<h4 class="date">April 30, 2024</h4>
 
 </div>
 
 
-<div id="overview" class="section level1">
-<h1>Overview</h1>
+<div id="overview" class="section level2">
+<h2>Overview</h2>
 <p>This project conducts an exploratory analysis of Airbnb listing data
 from New York City, sourced from the open dataset available on Kaggle.
 The focus is on understanding the various factors that influence the
 pricing of Airbnb listings, with an aim to provide insights that could
 benefit hosts, guests, and policymakers engaged with the sharing
 economy.</p>
+</div>
 <div id="project-introduction" class="section level2">
 <h2>Project Introduction</h2>
 <p>Airbnb has transformed the way people travel and experience new
@@ -397,7 +398,11 @@ short-term rentals on local housing markets and tourism.</li>
 </div>
 <div id="data" class="section level2">
 <h2>Data</h2>
-<p>The processed dataset comprises 68,428 observations. Key variables
+<div id="new-york-airbnb-open-data" class="section level3">
+<h3>New York Airbnb Open Data</h3>
+<p>The original unprocessed data can be obtained <a
+href="https://www.kaggle.com/datasets/arianazmoudeh/airbnbopendata/data">here</a>.
+The processed dataset comprises 68,428 observations. Key variables
 relevant to this study are summarized in the sections below. Discrete
 variables are analyzed for their frequency distribution, with
 percentages. Continuous variables are summarized using their median
@@ -807,6 +812,18 @@ n (%); Median (IQR)
 </div>
 </div>
 </div>
+</div>
+<div id="new-york-city-2020-census-data" class="section level3">
+<h3>New York City 2020 Census Data</h3>
+<p>We complement our analysis with data from the New York City Census,
+obtained from the NYC Department of City Planning. This dataset provides
+insights into housing-related variables such as total population, total
+housing units, number of occupied housing units, and number of vacant
+housing units by neighbourhoods. The census data is processed and merged
+with the Airbnb dataset to enhance our understanding of the factors
+influencing Airbnb listing prices. The original unprocessed data can be
+obtained <a
+href="https://s-media.nyc.gov/agencies/dcp/assets/files/excel/data-tools/census/census2020/nyc_decennialcensusdata_2010_2020_change-core-geographies.xlsx">here</a>.</p>
 </div>
 </div>
 
